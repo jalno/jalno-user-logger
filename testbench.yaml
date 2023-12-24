@@ -1,0 +1,4 @@
+providers:
+  - Jalno\UserLogger\ServiceProvider
+  - Jalno\AAA\ServiceProvider
+  

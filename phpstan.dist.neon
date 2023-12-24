@@ -1,0 +1,8 @@
+includes:
+    - ./vendor/nunomaduro/larastan/extension.neon
+parameters:
+    # Level 9 is the highest level (max)
+    level: 0
+    paths:
+        - src/
+    checkGenericClassInNonGenericObjectType: false
