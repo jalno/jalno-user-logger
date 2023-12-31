@@ -3,6 +3,8 @@
 namespace Jalno\UserLogger\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Jalno\UserLogger\Helpers\ArrayObject;
+
 
 class Serialize implements CastsAttributes
 {
@@ -41,7 +43,20 @@ class Serialize implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes)
     {
-        throw new \DomainException('Can not save data to avoid data corruption');
+        if ($model->exists or $model->getKey()) {
+            throw new \DomainException(sprintf(
+                'Can not save data on existing model (%s:%s) to avoid data corruption',
+                get_class($model),
+                $model->getKey()
+            ));
+        }
+        return serialize(json_decode(
+            json_encode(
+                $value,
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+            ),
+            true
+        ));
     }
 
     protected function preUnserialize(): void
@@ -52,27 +67,11 @@ class Serialize implements CastsAttributes
 
     protected function postUnserialize(): void
     {
-        if ($this->lastUnserializeCallback) {
-            ini_set('unserialize_callback_func', $this->lastUnserializeCallback);
-        }
+        ini_set('unserialize_callback_func', $this->lastUnserializeCallback ?: "");
     }
 
     protected static function unserializeCallback($className)
     {
         class_alias(ArrayObject::class, $className);
-    }
-}
-class ArrayObject extends \stdClass implements \Serializable
-{
-    public function serialize(): string
-    {
-        return serialize(get_object_vars($this));
-    }
-
-    public function unserialize(string $data): void
-    {
-        foreach (unserialize($data) as $key => $value) {
-            $this->{$key} = $value;
-        }
     }
 }
