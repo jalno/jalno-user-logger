@@ -3,6 +3,7 @@
 namespace Jalno\UserLogger;
 
 use Jalno\UserLogger\Contracts\ILog;
+use dnj\UserLogger\Contracts\ILog as ILogDnj;
 use Jalno\UserLogger\Contracts\ILogger;
 use Jalno\UserLogger\Policies\LogPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +17,7 @@ class ServiceProvider extends SupportServiceProvider
      */
     protected $policies = [
         ILog::class => LogPolicy::class,
+        ILogDnj::class => LogPolicy::class,
     ];
 
     public function register()

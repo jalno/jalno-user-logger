@@ -1,8 +1,8 @@
 <?php
 
-namespace dnj\UserLogger;
+namespace Jalno\UserLogger;
 
-use dnj\AAA\Models\User;
+use Jalno\AAA\Models\User;
 
 trait ModelHelpers
 {

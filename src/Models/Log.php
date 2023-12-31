@@ -18,9 +18,15 @@ use Illuminate\Support\Arr;
 
 /**
  * @property array $parameters
- * @property int|IUser|null $user_id
- * @property \DateTimeInterface $time
- * @property \DateTimeInterface $create_at
+ * @property int|null $user_id
+ * @property IUser|null $user
+ * @property string|null $event
+ * @property string|null $subject_type
+ * @property string|int|null $subject_id
+ * @property string|null $ip
+ * @property string|null $title
+ * @property \DateTimeInterface|int $time
+ * @property \DateTimeInterface $created_at
  */
 class Log extends Model implements ILog
 {
@@ -29,7 +35,7 @@ class Log extends Model implements ILog
 
     public static function newFactory(): LogFactory
     {
-        return LogFactory::new(); // @TODO: correct factory
+        return LogFactory::new();
     }
 
     public const CREATED_AT = 'time';
@@ -42,6 +48,7 @@ class Log extends Model implements ILog
 
     protected $casts = [
         'parameters' => Serialize::class,
+        self::CREATED_AT => 'timestamp',
     ];
 
     public function user(): BelongsTo
@@ -51,8 +58,10 @@ class Log extends Model implements ILog
 
     public function subject(): MorphTo
     {
-        if (config('user-logger.subject_returns_soft_deleted_models')) {
-            return $this->morphTo()->withTrashed();
+        // To make this works with Jalno, We save subject in Log's parameters.
+        if (isset($this->parameters['subject']['type'], $this->parameters['subject']['id'])) {
+            $this->attributes['subject_type'] = $this->parameters['subject']['type'];
+            $this->attributes['subject_id'] = $this->parameters['subject']['id'];
         }
 
         return $this->morphTo();
@@ -61,34 +70,17 @@ class Log extends Model implements ILog
     /**
      * @param array{id?:int,event?:string|string[],user?:int|IUser|null,subject?:Model|string|array{type:string,id?:string}|null,ip?:string|string[]|null} $filters
      */
-    public function scopeFilter(Builder $query, array $filters)
+    public function scopeFilter(Builder $query, array $filters): void
     {
         if (isset($filters['id'])) {
             $query->where('id', $filters['id']);
         }
-        if (isset($filters['event'])) {
-            $this->scopeWithEvent($query, $filters['event']);
-        }
         if (array_key_exists('user', $filters)) {
             $this->scopeWithUser($query, $filters['user']);
-        }
-        if (array_key_exists('subject', $filters)) {
-            $this->scopeWithSubject($query, $filters['subject']);
         }
         if (array_key_exists('ip', $filters)) {
             $this->scopeWithIP($query, $filters['ip']);
         }
-    }
-
-    /**
-     * @param string[]|string $event
-     */
-    public function scopeWithEvent(Builder $query, array|string $event): void
-    {
-        if (!is_array($event)) {
-            $event = [$event];
-        }
-        $query->whereIn('event', $event);
     }
 
     /**
@@ -118,33 +110,6 @@ class Log extends Model implements ILog
         $query->where($this->getOwnerUserColumn(), $user);
     }
 
-    /**
-     * @param Model|string|array{type:string,id?:string}|null $subject
-     */
-    public function scopeWithSubject(Builder $query, Model|string|array|null $subject): void
-    {
-        if (null === $subject) {
-            $query->whereNull('subject_type');
-
-            return;
-        }
-        if (is_string($subject)) {
-            $subject = [
-                'type' => $subject,
-            ];
-        } elseif ($subject instanceof Model) {
-            $subject = [
-                'type' => get_class($subject),
-                'id' => $subject->getKey(),
-            ];
-        }
-
-        $query->where('subject_type', $subject['type']);
-        if (isset($subject['id'])) {
-            $query->where('subject_id', $subject['id']);
-        }
-    }
-
     public function getId(): ?int
     {
         return $this->id;
@@ -172,16 +137,27 @@ class Log extends Model implements ILog
 
     public function getSubjectType(): ?string
     {
+        if (is_null($this->subject_type) and isset($this->parameters['subject']['type'], $this->parameters['subject']['id'])) {
+            $this->attributes['subject_type'] = $this->parameters['subject']['type'];
+            $this->attributes['subject_id'] = $this->parameters['subject']['id'];
+        }
         return $this->subject_type;
     }
 
     public function getSubjectId(): string|int|null
     {
+        if (is_null($this->subject_id) and isset($this->parameters['subject']['type'], $this->parameters['subject']['id'])) {
+            $this->attributes['subject_type'] = $this->parameters['subject']['type'];
+            $this->attributes['subject_id'] = $this->parameters['subject']['id'];
+        }
         return $this->subject_id;
     }
 
     public function getEvent(): string
     {
+        if (is_null($this->event) and isset($this->parameters['event'])) {
+            $this->attributes['event'] = $this->parameters['event'];
+        }
         return $this->event;
     }
 
@@ -192,7 +168,7 @@ class Log extends Model implements ILog
 
     public function getExtraProperty(string $propertyName, mixed $defaultValue = null): mixed
     {
-        return Arr::get($this->properties, $propertyName, $defaultValue);
+        return Arr::get($this->parameters, $propertyName, $defaultValue);
     }
 
     public function getCreatedAt(): \DateTimeInterface
@@ -212,9 +188,29 @@ class Log extends Model implements ILog
 
     public function getOwnerUserColumn(): string
     {
-        return 'user';
+        return 'user'; // It should be user_id But, It's in Jalno Legacy Style.
     }
 
+    public function getDateFormat(): string
+    {
+        return 'U';
+    }
+
+
+    public function setAttribute($key, $value)
+    {
+        if ($key == 'created_at') {
+            $key = 'time';
+        }
+        if ($key == 'event') {
+            $parameters = $this->parameters ?? [];
+            $parameters['event'] = $value;
+
+            $key = 'parameters';
+            $value = $parameters;
+        }
+        return parent::setAttribute($key, $value);
+    }
     /**
      * Get an attribute from the model.
      * In Jalno's UserPanel we use type key to store id of the type, and now, we try to convert attribute to attribute_id
@@ -224,14 +220,13 @@ class Log extends Model implements ILog
      */
     public function getAttribute($key)
     {
-        switch ($key) {
-            case 'user':
-            case 'user_id':
-                $this->attributes['user_id'] = $this->attributes['user_id'] ?? $this->attributes['user'];
-                unset($this->attributes['user']);
-            case 'create_at':
-                return parent::getAttribute('time');
-            default: return parent::getAttribute($key);
+        if ($key == 'user' or $key == 'user_id') {
+            $this->attributes['user_id'] = $this->attributes['user_id'] ?? $this->attributes['user'];
+            unset($this->attributes['user']);
         }
+        if ($key == 'created_at') {
+            return parent::getAttribute(self::CREATED_AT);
+        }
+        return parent::getAttribute($key);
     }
 }

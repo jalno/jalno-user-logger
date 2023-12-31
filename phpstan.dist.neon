@@ -2,7 +2,8 @@ includes:
     - ./vendor/nunomaduro/larastan/extension.neon
 parameters:
     # Level 9 is the highest level (max)
-    level: 0
+    level: 5
     paths:
         - src/
+        - database/factories
     checkGenericClassInNonGenericObjectType: false

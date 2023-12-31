@@ -8,16 +8,10 @@ use Jalno\UserLogger\Helpers\ArrayObject;
 
 class Serialize implements CastsAttributes
 {
-    private $lastUnserializeCallback = null;
+    private ?string $lastUnserializeCallback = null;
 
     /**
-     * Cast the given value.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  array  $attributes
-     * @return mixed
+     * {@inheritdoc}
      */
     public function get($model, string $key, $value, array $attributes)
     {
@@ -29,7 +23,6 @@ class Serialize implements CastsAttributes
         } finally {
             $this->postUnserialize();
         }
-        return $value;
     }
 
     /**
@@ -70,7 +63,7 @@ class Serialize implements CastsAttributes
         ini_set('unserialize_callback_func', $this->lastUnserializeCallback ?: "");
     }
 
-    protected static function unserializeCallback($className)
+    protected static function unserializeCallback(string $className): void
     {
         class_alias(ArrayObject::class, $className);
     }

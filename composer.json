@@ -72,19 +72,5 @@
             "Composer\\Config::disableProcessTimeout",
             "@testbench serve"
         ]
-    },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/root/w/jalno/jalno-aaa"
-        },
-        {
-			"type": "path",
-			"url": "/root/w/dnj/laravel-aaa"
-		},
-		{
-			"type": "path",
-			"url": "/root/w/dnj/laravel-user-logger"
-		}
-    ]
+    }
 }

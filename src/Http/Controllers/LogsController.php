@@ -11,7 +11,9 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Response;
+use Illuminate\Http\Response;
+use dnj\AAA\Contracts\IUser;
+use Jalno\UserLogger\Contracts\Permissions\Logs as LogsPermissions;
 
 class LogsController extends Controller
 {
@@ -25,13 +27,11 @@ class LogsController extends Controller
     public function index(LogsSearchRequest $request): LogCollection
     {
         $data = $request->validated();
-        if (isset($data['user_id'])) {
-            $data['user'] = $data['user_id'];
-            unset($data['user_id']);
-        }
+        /** @var IUser */
+        $user = Auth::user();
         $types = Log::query()
             ->filter($data)
-            // ->userHasAccess(Auth::user())
+            ->userHasAccess($user)
             ->cursorPaginate();
 
         return LogCollection::make($types, true);
@@ -40,8 +40,7 @@ class LogsController extends Controller
     public function show(int $log): LogResource
     {
         $type = Log::query()->findOrFail($log);
-        // dd($type->parameters);
-        // $this->authorize('view', $type);
+        $this->authorize(LogsPermissions::View->value, $type);
 
         return LogResource::make($type);
     }
@@ -49,7 +48,7 @@ class LogsController extends Controller
     public function destroy(int $log): Response
     {
         $log = Log::query()->findOrFail($log);
-        $this->authorize('destroy', $log);
+        $this->authorize(LogsPermissions::Delete->value, $log);
         $log->delete();
 
         return response()->noContent();

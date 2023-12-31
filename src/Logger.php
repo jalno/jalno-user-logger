@@ -16,6 +16,8 @@ class Logger implements ILogger
     protected ?\DateTimeInterface $createDate = null;
     protected ?string $ip = null;
     protected ?string $event = null;
+    protected ?string $title = null;
+    protected ?string $type = null;
 
     public function causedBy(string|int|Authenticatable|null $user): self
     {
@@ -112,15 +114,39 @@ class Logger implements ILogger
         return $logger;
     }
 
+    public function withTitle(string $title): self
+    {
+        $logger = clone $this;
+        $logger->title = $title;
+
+        return $logger;
+    }
+
+    public function withType(string $type): self
+    {
+        $logger = clone $this;
+        $logger->type = $type;
+
+        return $logger;
+    }
+
     public function build(): Log
     {
+        $time = $this->createDate ?? now();
         $log = new Log();
-        $log->event = $this->event;
-        $log->user_id = $this->user instanceof Authenticatable ? $this->user->getAuthIdentifier() : $this->user;
-        $log->subject()->associate($this->subject);
-        $log->properties = $this->properties;
-        $log->created_at = $this->createDate ?? now();
         $log->ip = $this->ip;
+        $log->event = $this->event;
+        $log->title = $this->title;
+        $log->user = $this->user instanceof Authenticatable ? $this->user->getAuthIdentifier() : $this->user;
+        $log->parameters = array_merge_recursive($log->parameters ?? [], [
+            'subject' => [
+                'type' => get_class($this->subject),
+                'id' => $this->subject->getKey(),
+            ],
+            'properties' => $this->properties,
+        ]);
+        $log->type = $this->type ?: \packages\userpanel\logs\JalnoUserLogger::class; // @phpstan-ignore-line
+        $log->time = $time->getTimestamp();
 
         return $log;
     }
