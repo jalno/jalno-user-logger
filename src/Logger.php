@@ -18,6 +18,7 @@ class Logger implements ILogger
     protected ?string $event = null;
     protected ?string $title = null;
     protected ?string $type = null;
+    protected ?\Closure $postBuild = null;
 
     public function causedBy(string|int|Authenticatable|null $user): self
     {
@@ -130,6 +131,14 @@ class Logger implements ILogger
         return $logger;
     }
 
+    public function postBuild(\Closure $postBuild) 
+    {
+        $logger = clone $this;
+        $logger->postBuild = $postBuild;
+
+        return $logger;
+    }
+
     public function build(): Log
     {
         $time = $this->createDate ?? now();
@@ -147,6 +156,10 @@ class Logger implements ILogger
         ]);
         $log->type = $this->type ?: \packages\userpanel\logs\JalnoUserLogger::class; // @phpstan-ignore-line
         $log->time = $time->getTimestamp();
+
+        if (is_callable($this->postBuild)) {
+            call_user_func($this->postBuild, $log);
+        }
 
         return $log;
     }
