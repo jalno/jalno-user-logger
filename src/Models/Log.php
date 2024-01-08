@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 /**
  * @property array $parameters
@@ -172,6 +173,9 @@ class Log extends Model implements ILog
 
     public function getCreatedAt(): \DateTimeInterface
     {
+        if (is_numeric($this->time)) {
+            return Carbon::createFromTimestamp($this->time);
+        }
         return $this->time;
     }
 
