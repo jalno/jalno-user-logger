@@ -14,8 +14,8 @@
     ],
     "require": {
         "php": "^8.1",
-        "jalno/jalno-aaa": "^1.1.0",
-        "dnj/laravel-user-logger": "^1.0.0"
+        "jalno/jalno-aaa": "dev-master as 1.1.0",
+        "dnj/laravel-user-logger": "dev-master as 1.0.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10",
@@ -72,5 +72,11 @@
             "Composer\\Config::disableProcessTimeout",
             "@testbench serve"
         ]
-    }
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/jalno/jalno-aaa.git"
+        }
+    ]
 }
