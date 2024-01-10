@@ -1,0 +1,82 @@
+{
+    "name": "jalno/jalno-user-logger",
+    "description": "An implemenation of dnj/laravel-user-logger that makes for legacy projects that working with Jalno.",
+    "license": "MIT",
+    "type": "library",
+    "homepage": "https://github.com/jalno/jalno-user-logger",
+    "authors": [
+        {
+            "name": "JeyServer LTD",
+            "email": "info@jeyserver.com",
+            "homepage": "https://www.jeyserver.com",
+            "role": "Maintainer"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "jalno/jalno-aaa": "dev-master as 1.1.0",
+        "dnj/laravel-user-logger": "dev-master as 1.0.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "nunomaduro/larastan": "^2.6",
+        "phpunit/phpunit": "^9",
+        "friendsofphp/php-cs-fixer": "^3.11",
+        "orchestra/testbench": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jalno\\UserLogger\\": "src/",
+            "Jalno\\UserLogger\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jalno\\UserLogger\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.1.x-dev"
+        },
+        "laravel": {
+            "providers": [
+                "Jalno\\UserLogger\\ServiceProvider"
+            ],
+            "dont-discover": [
+                "dnj\\UserLogger\\ServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "testbench": "@php ./vendor/bin/testbench",
+        "phpstan": "@php ./vendor/bin/phpstan",
+        "phpunit": "@php ./vendor/bin/phpunit",
+        "php-cs-fixer": "@php ./vendor/bin/php-cs-fixer",
+        "test:composer": "@composer validate",
+        "test:phpstan": "@phpstan analyze",
+        "test:phpunit": "@phpunit",
+        "test:codestyle": "vendor/bin/php-cs-fixer fix -v --dry-run --stop-on-violation --using-cache=no",
+        "test": [
+            "@test:composer",
+            "@test:phpstan",
+            "@test:phpunit",
+            "@test:codestyle"
+        ],
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@testbench serve"
+        ]
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/jalno/jalno-aaa.git"
+        }
+    ]
+}
